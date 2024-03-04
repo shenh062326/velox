@@ -21,6 +21,11 @@ namespace facebook::velox::exec {
 
 namespace {
 
+// For alignment, 8 is faster than 4.
+// If the alignment is changed from 8 to 4, you need to change bitswap64
+// to bitswap32.
+const int32_t kAlignment = 8;
+
 template <typename T>
 FOLLY_ALWAYS_INLINE void encodeRowColumn(
     const PrefixSortLayout& prefixSortLayout,
@@ -74,6 +79,25 @@ FOLLY_ALWAYS_INLINE void extractRowColumnToPrefix(
   }
 }
 
+FOLLY_ALWAYS_INLINE int32_t alignmentPadding(int32_t size, int32_t alignment) {
+  auto extra = size % alignment;
+  return extra == 0 ? 0 : alignment - extra;
+}
+
+FOLLY_ALWAYS_INLINE void bitsSwapByWord(char* address) {
+  auto& v = *reinterpret_cast<uint64_t*>(address);
+  v = __builtin_bswap64(v);
+}
+
+FOLLY_ALWAYS_INLINE int compareByWord(char* left, char* right) {
+  auto& leftWord = *reinterpret_cast<uint64_t*>(left);
+  auto& rightWord = *reinterpret_cast<uint64_t*>(right);
+  if (leftWord > rightWord) {
+    return 1;
+  }
+  return leftWord == rightWord ? 0 : -1;
+}
+
 } // namespace
 
 PrefixSortLayout PrefixSortLayout::makeSortLayout(
@@ -104,21 +128,32 @@ PrefixSortLayout PrefixSortLayout::makeSortLayout(
       break;
     }
   }
+  auto padding = alignmentPadding(normalizedKeySize, kAlignment);
+  normalizedKeySize += padding;
   return PrefixSortLayout{
       normalizedKeySize + sizeof(char*),
       normalizedKeySize,
       numNormalizedKeys,
       numKeys,
       compareFlags,
+      numNormalizedKeys == 0,
       numNormalizedKeys < numKeys,
       std::move(prefixOffsets),
-      std::move(encoders)};
+      std::move(encoders),
+      padding};
 }
 
 FOLLY_ALWAYS_INLINE int PrefixSort::compareAllNormalizedKeys(
     char* left,
     char* right) {
-  return memcmp(left, right, sortLayout_.normalizedKeySize);
+  int result = 0;
+  for (auto i = 0; i < sortLayout_.normalizedBufferSize; i += kAlignment) {
+    result = compareByWord(left + i, right + i);
+    if (result != 0) {
+      return result;
+    }
+  }
+  return result;
 }
 
 int PrefixSort::comparePartNormalizedKeys(char* left, char* right) {
@@ -136,20 +171,16 @@ int PrefixSort::comparePartNormalizedKeys(char* left, char* right) {
       return result;
     }
   }
-  return 0;
+  return result;
 }
 
 PrefixSort::PrefixSort(
     memory::MemoryPool* pool,
     RowContainer* rowContainer,
     const std::vector<CompareFlags>& keyCompareFlags,
-    const PrefixSortConfig& config)
-    : pool_(pool),
-      sortLayout_(PrefixSortLayout::makeSortLayout(
-          rowContainer->keyTypes(),
-          keyCompareFlags,
-          config.maxNormalizedKeySize)),
-      rowContainer_(rowContainer) {}
+    const PrefixSortConfig& config,
+    const PrefixSortLayout& sortLayout)
+    : pool_(pool), sortLayout_(sortLayout), rowContainer_(rowContainer) {}
 
 void PrefixSort::extractRowToPrefix(char* row, char* prefix) {
   for (auto i = 0; i < sortLayout_.numNormalizedKeys; i++) {
@@ -161,38 +192,21 @@ void PrefixSort::extractRowToPrefix(char* row, char* prefix) {
         row,
         prefix);
   }
+  simd::memset(
+      prefix + sortLayout_.normalizedBufferSize - sortLayout_.padding,
+      0,
+      sortLayout_.padding);
+  for (auto i = 0; i < sortLayout_.normalizedBufferSize; i += kAlignment) {
+    bitsSwapByWord(prefix + i);
+  }
   // Set row address.
   getAddressFromPrefix(prefix) = row;
 }
 
-void PrefixSort::sort(std::vector<char*>& rows) {
-  VELOX_CHECK_GT(rows.size(), 0);
-  // All keys can not normalize, skip the binary string compare opt.
-  // Although benchmark time cost is nearly the same, it could avoid
-  // prefixAllocation.
-  if (sortLayout_.numNormalizedKeys == 0) {
-    std::sort(
-        rows.begin(),
-        rows.end(),
-        [&](const char* leftRow, const char* rightRow) {
-          for (vector_size_t index = 0; index < sortLayout_.numKeys; ++index) {
-            if (auto result = rowContainer_->compare(
-                    leftRow,
-                    rightRow,
-                    index,
-                    sortLayout_.compareFlags[index])) {
-              return result < 0;
-            }
-          }
-          return false;
-        });
-    return;
-  }
-
+void PrefixSort::sortInternal(std::vector<char*>& rows) {
   const auto numRows = rows.size();
   const auto entrySize = sortLayout_.entrySize;
   memory::ContiguousAllocation prefixAllocation;
-
   // 1. Allocate prefixes data.
   {
     const auto numPages =
@@ -227,4 +241,5 @@ void PrefixSort::sort(std::vector<char*>& rows) {
     rows[i] = getAddressFromPrefix(prefixes + i * entrySize);
   }
 }
+
 } // namespace facebook::velox::exec
