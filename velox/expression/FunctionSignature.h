@@ -127,7 +127,8 @@ class FunctionSignature {
       TypeSignature returnType,
       std::vector<TypeSignature> argumentTypes,
       std::vector<bool> constantArguments,
-      bool variableArity);
+      bool variableArity,
+      bool orderSensitive);
 
   virtual ~FunctionSignature() = default;
 
@@ -158,6 +159,10 @@ class FunctionSignature {
     return variables_;
   }
 
+  bool orderSensitive() const {
+    return orderSensitive_;
+  }
+
   // This tests syntactic equality not semantic equality
   // For example, even if only the names of the variables are
   // different the signatures are considered not equal (array(K) != array(V))
@@ -177,6 +182,7 @@ class FunctionSignature {
   const std::vector<TypeSignature> argumentTypes_;
   const std::vector<bool> constantArguments_;
   const bool variableArity_;
+  const bool orderSensitive_;
 };
 
 using FunctionSignaturePtr = std::shared_ptr<FunctionSignature>;
@@ -189,13 +195,15 @@ class AggregateFunctionSignature : public FunctionSignature {
       TypeSignature intermediateType,
       std::vector<TypeSignature> argumentTypes,
       std::vector<bool> constantArguments,
-      bool variableArity)
+      bool variableArity,
+      bool orderSensitive)
       : FunctionSignature(
             std::move(variables),
             std::move(returnType),
             std::move(argumentTypes),
             std::move(constantArguments),
-            variableArity),
+            variableArity,
+            orderSensitive),
         intermediateType_{std::move(intermediateType)} {}
 
   const TypeSignature& intermediateType() const {
@@ -374,6 +382,11 @@ class AggregateFunctionSignatureBuilder {
     return *this;
   }
 
+  AggregateFunctionSignatureBuilder& orderSensitive(bool orderSensitive) {
+    orderSensitive_ = orderSensitive;
+    return *this;
+  }
+
   std::shared_ptr<AggregateFunctionSignature> build();
 
  private:
@@ -383,6 +396,7 @@ class AggregateFunctionSignatureBuilder {
   std::vector<TypeSignature> argumentTypes_;
   std::vector<bool> constantArguments_;
   bool variableArity_{false};
+  bool orderSensitive_{true};
 };
 
 /// Return a string representation of function signature: name(type1,

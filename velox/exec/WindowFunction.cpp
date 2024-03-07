@@ -85,7 +85,13 @@ std::unique_ptr<WindowFunction> WindowFunction::create(
             type->toString(),
             resultType->toString())
         return func.value()->factory(
-            args, resultType, ignoreNulls, pool, stringAllocator, config);
+            args,
+            resultType,
+            ignoreNulls,
+            pool,
+            stringAllocator,
+            config,
+            signature->orderSensitive());
       }
     }
 

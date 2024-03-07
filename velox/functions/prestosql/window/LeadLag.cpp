@@ -415,7 +415,8 @@ void registerLag(const std::string& name) {
           bool ignoreNulls,
           velox::memory::MemoryPool* pool,
           HashStringAllocator* /*stringAllocator*/,
-          const velox::core::QueryConfig& /*queryConfig*/)
+          const velox::core::QueryConfig& /*queryConfig*/,
+          bool /*orderSensitive*/)
           -> std::unique_ptr<exec::WindowFunction> {
         return std::make_unique<LeadLagFunction<true>>(
             args, resultType, ignoreNulls, pool);
@@ -432,7 +433,8 @@ void registerLead(const std::string& name) {
           bool ignoreNulls,
           velox::memory::MemoryPool* pool,
           HashStringAllocator* /*stringAllocator*/,
-          const velox::core::QueryConfig& /*queryConfig*/)
+          const velox::core::QueryConfig& /*queryConfig*/,
+          bool /*orderSensitive*/)
           -> std::unique_ptr<exec::WindowFunction> {
         return std::make_unique<LeadLagFunction<false>>(
             args, resultType, ignoreNulls, pool);

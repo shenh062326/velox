@@ -32,11 +32,13 @@ exec::AggregateRegistrationResult registerSum(
           .returnType("real")
           .intermediateType("double")
           .argumentType("real")
+          .orderSensitive(false)
           .build(),
       exec::AggregateFunctionSignatureBuilder()
           .returnType("double")
           .intermediateType("double")
           .argumentType("double")
+          .orderSensitive(false)
           .build(),
       exec::AggregateFunctionSignatureBuilder()
           .integerVariable("a_precision")
@@ -44,6 +46,7 @@ exec::AggregateRegistrationResult registerSum(
           .argumentType("DECIMAL(a_precision, a_scale)")
           .intermediateType("VARBINARY")
           .returnType("DECIMAL(38, a_scale)")
+          .orderSensitive(false)
           .build(),
   };
 
@@ -52,6 +55,7 @@ exec::AggregateRegistrationResult registerSum(
                              .returnType("bigint")
                              .intermediateType("bigint")
                              .argumentType(inputType)
+                             .orderSensitive(false)
                              .build());
   }
 

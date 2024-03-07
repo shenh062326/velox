@@ -55,11 +55,15 @@ class WindowFunction {
     return pool_;
   }
 
-  void setUseSegmentTree(bool useSegmentTreeBySql,
-                         bool orderInsensitive,
-                         int32_t minFrameUseSegmentTree) {
-    useSegmentTreeBySql_ = useSegmentTreeBySql;
-    orderInsensitive_ = orderInsensitive;
+  void setEnableSegmentTree(bool enableSegmentTreeOpt) {
+    enableSegmentTreeOpt_ = enableSegmentTreeOpt;
+  }
+
+  void setUseSegmentTreeByConstFrame(bool useSegmentTreeByConstFrame) {
+    useSegmentTreeByConstFrame_ = useSegmentTreeByConstFrame;
+  }
+
+  void setMinFrameUseSegmentTree(int32_t minFrameUseSegmentTree) {
     minFrameUseSegmentTree_ = minFrameUseSegmentTree;
   }
 
@@ -136,12 +140,15 @@ class WindowFunction {
   // Used for setting null for empty frames.
   SelectivityVector invalidRows_;
 
-  // Whether this function use segment tree optimization.
-  bool useSegmentTreeBySql_{false};
-  // The min average frame size will use segmentTree.
-  int32_t minFrameUseSegmentTree_{64};
-  // Whether the aggregate is order insensitive.
-  bool orderInsensitive_{true};
+  // If the frame is constant and larger than minFrameUseSegmentTree, direct
+  // enable use segment tree, no need to compute the average frame size.
+  bool useSegmentTreeByConstFrame_;
+
+  // Whether turn on the optimization of segment tree.
+  bool enableSegmentTreeOpt_;
+
+  // The min average frame size can use segment tree.
+  int32_t minFrameUseSegmentTree_;
 };
 
 /// Information from the Window operator that is useful for the function logic.
@@ -156,7 +163,8 @@ using WindowFunctionFactory = std::function<std::unique_ptr<WindowFunction>(
     bool ignoreNulls,
     memory::MemoryPool* pool,
     HashStringAllocator* stringAllocator,
-    const core::QueryConfig& config)>;
+    const core::QueryConfig& config,
+    bool orderSensitive)>;
 
 /// Register a window function with the specified name and signatures.
 /// Registering a function with the same name a second time overrides the first

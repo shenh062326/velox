@@ -249,7 +249,10 @@ std::unique_ptr<Aggregate> Aggregate::create(
     const core::QueryConfig& config) {
   // Lookup the function in the new registry first.
   if (auto func = getAggregateFunctionEntry(name)) {
-    return func->factory(step, argTypes, resultType, config);
+    std::unique_ptr<Aggregate> aggregate =
+        func->factory(step, argTypes, resultType, config);
+    aggregate->setOrderSensitive(func->signatures.front()->orderSensitive());
+    return aggregate;
   }
 
   VELOX_USER_FAIL("Aggregate function not registered: {}", name);

@@ -180,7 +180,8 @@ void registerFirstLastInternal(const std::string& name) {
          bool ignoreNulls,
          velox::memory::MemoryPool* pool,
          HashStringAllocator* /*stringAllocator*/,
-         const velox::core::QueryConfig& /*queryConfig*/)
+         const velox::core::QueryConfig& /*queryConfig*/,
+         bool orderSensitive)
           -> std::unique_ptr<exec::WindowFunction> {
         return std::make_unique<FirstLastValueFunction<TValue>>(
             args, resultType, ignoreNulls, pool);

@@ -252,6 +252,14 @@ class Aggregate {
     clearInternal();
   }
 
+  bool orderSensitive() {
+    return orderSensitive_;
+  }
+
+  void setOrderSensitive(bool orderSensitive) {
+    orderSensitive_ = orderSensitive;
+  }
+
   void enableValidateIntermediateInputs() {
     validateIntermediateInputs_ = true;
   }
@@ -409,6 +417,9 @@ class Aggregate {
   std::vector<vector_size_t> pushdownCustomIndices_;
 
   bool validateIntermediateInputs_ = false;
+
+  // Whether the aggregate function is order sensitive
+  bool orderSensitive_ = true;
 };
 
 using AggregateFunctionFactory = std::function<std::unique_ptr<Aggregate>(

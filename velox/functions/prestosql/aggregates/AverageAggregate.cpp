@@ -39,6 +39,7 @@ void registerAverageAggregate(
                              .returnType("double")
                              .intermediateType("row(double,bigint)")
                              .argumentType(inputType)
+                             .orderSensitive(false)
                              .build());
   }
   // Real input type in Presto has special case and returns REAL, not DOUBLE.
@@ -46,6 +47,7 @@ void registerAverageAggregate(
                            .returnType("real")
                            .intermediateType("row(double,bigint)")
                            .argumentType("real")
+                           .orderSensitive(false)
                            .build());
 
   signatures.push_back(exec::AggregateFunctionSignatureBuilder()
@@ -54,6 +56,7 @@ void registerAverageAggregate(
                            .argumentType("DECIMAL(a_precision, a_scale)")
                            .intermediateType("varbinary")
                            .returnType("DECIMAL(a_precision, a_scale)")
+                           .orderSensitive(false)
                            .build());
 
   auto name = prefix + kAvg;

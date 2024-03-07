@@ -42,6 +42,30 @@ class SumTest : public SumTestBase {
   }
 };
 
+TEST_F(SumTest, sumWithOrderBy) {
+  auto data = makeRowVector({
+      makeFlatVector<int16_t>({1, 1, 2, 2, 1, 2, 1}),
+      makeFlatVector<int64_t>({1, 2, 3, 4, 5, 6, 7}),
+      makeFlatVector<int64_t>({10, 20, 30, 40, 50, 60, 70}),
+      makeFlatVector<int32_t>({11, 44, 22, 55, 33, 66, 77}),
+  });
+
+  createDuckDbTable({data});
+
+  // Sorted aggregations over same inputs.
+  auto plan =
+      PlanBuilder()
+          .values({data})
+          .singleAggregation(
+              {"c0"}, {"sum(c1 ORDER BY c2 DESC)", "avg(c1 ORDER BY c3)"})
+          .planNode();
+
+  AssertQueryBuilder(plan, duckDbQueryRunner_)
+      .assertResults(
+          "SELECT c0, sum(c1 ORDER BY c2 DESC), avg(c1 ORDER BY c3) "
+          " FROM tmp GROUP BY 1");
+}
+
 TEST_F(SumTest, sumTinyint) {
   auto rowType = ROW({"c0", "c1"}, {BIGINT(), TINYINT()});
   auto vectors = makeVectors(rowType, 1000, 10);

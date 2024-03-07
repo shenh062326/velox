@@ -915,6 +915,7 @@ exec::AggregateRegistrationResult registerMinMax(
                            .returnType("T")
                            .intermediateType("T")
                            .argumentType("T")
+                           .orderSensitive(false)
                            .build());
   for (const auto& type :
        {"tinyint", "integer", "smallint", "bigint", "real", "double"}) {
@@ -925,6 +926,7 @@ exec::AggregateRegistrationResult registerMinMax(
             .intermediateType(fmt::format("row(bigint, array({}))", type))
             .argumentType(type)
             .argumentType("bigint")
+            .orderSensitive(false)
             .build());
   }
 

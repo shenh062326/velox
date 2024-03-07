@@ -49,8 +49,6 @@ Window::Window(
     windowBuild_ = std::make_unique<SortWindowBuild>(
         windowNode, pool(), spillConfig, &nonReclaimableSection_);
   }
-
-  functionUseSegmentTree_ = Window::splitNames(driverCtx->queryConfig().functionUseSegmentTree());
 }
 
 void Window::initialize() {
@@ -193,17 +191,10 @@ void Window::createWindowFunctions() {
   vector_size_t numFuncs = windowFunctions_.size();
   for (auto i = 0; i < numFuncs; i++) {
     const auto& windowFrame = windowFrames_[i];
-    windowFunctions_[i]->setUseSegmentTree(
-        false, true, minFrameSizeUseSegmentTree_);
-    auto function = functionUseSegmentTree_.find(
-        windowNode_->windowFunctions()[i].functionCall->name());
-    // Enable use segment tree when:
-    // 1 Frame must be kPreceding and kFollowing.
-    // 2 Frame size must >= minFrameSizeUseSegmentTree_.
-    // 3 Aggregation function must in functionUseSegmentTree_.
-    if (enableSegmentTreeOpt_ && function != functionUseSegmentTree_.end() &&
-        windowFrame.startType == core::WindowNode::BoundType::kPreceding &&
-        windowFrame.endType == core::WindowNode::BoundType::kFollowing &&
+    windowFunctions_[i]->setEnableSegmentTree(enableSegmentTreeOpt_);
+    windowFunctions_[i]->setMinFrameUseSegmentTree(minFrameSizeUseSegmentTree_);
+    // Enable use segment tree when frame size >= minFrameSizeUseSegmentTree_.
+    if (enableSegmentTreeOpt_ &&
         windowFrame.start.has_value() &&
         windowFrame.start.value().constant.has_value() &&
         windowFrame.end.has_value() &&
@@ -211,11 +202,9 @@ void Window::createWindowFunctions() {
         windowFrame.start.value().constant.value() +
                 windowFrame.end.value().constant.value() >=
             minFrameSizeUseSegmentTree_) {
-      windowFunctions_[i]->setUseSegmentTree(
-          true, function->second, minFrameSizeUseSegmentTree_);
+      windowFunctions_[i]->setUseSegmentTreeByConstFrame(true);
     } else {
-      windowFunctions_[i]->setUseSegmentTree(
-          false, function->second, minFrameSizeUseSegmentTree_);
+      windowFunctions_[i]->setUseSegmentTreeByConstFrame(false);
     }
   }
 }

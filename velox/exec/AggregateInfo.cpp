@@ -112,13 +112,15 @@ std::vector<AggregateInfo> toAggregateInfo(
       info.function->setLambdaExpressions(lambdas, expressionEvaluator);
     }
 
-    // Sorting keys and orders.
-    const auto numSortingKeys = aggregate.sortingKeys.size();
-    VELOX_CHECK_EQ(numSortingKeys, aggregate.sortingOrders.size());
-    info.sortingOrders = aggregate.sortingOrders;
-    info.sortingKeys.reserve(numSortingKeys);
-    for (const auto& key : aggregate.sortingKeys) {
-      info.sortingKeys.push_back(exprToChannel(key.get(), inputType));
+    if (info.function->orderSensitive()) {
+      // Sorting keys and orders.
+      const auto numSortingKeys = aggregate.sortingKeys.size();
+      VELOX_CHECK_EQ(numSortingKeys, aggregate.sortingOrders.size());
+      info.sortingOrders = aggregate.sortingOrders;
+      info.sortingKeys.reserve(numSortingKeys);
+      for (const auto& key : aggregate.sortingKeys) {
+        info.sortingKeys.push_back(exprToChannel(key.get(), inputType));
+      }
     }
 
     info.output = index;

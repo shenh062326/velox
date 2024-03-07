@@ -325,7 +325,8 @@ void registerNthValue(const std::string& name, TypeKind offsetTypeKind) {
           bool ignoreNulls,
           velox::memory::MemoryPool* pool,
           HashStringAllocator* /*stringAllocator*/,
-          const core::QueryConfig& /*queryConfig*/)
+          const core::QueryConfig& /*queryConfig*/,
+          bool /*orderSensitive*/)
           -> std::unique_ptr<exec::WindowFunction> {
         return std::make_unique<NthValueFunction>(
             args, resultType, ignoreNulls, pool);

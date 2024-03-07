@@ -157,12 +157,14 @@ void registerCountAggregate(
       exec::AggregateFunctionSignatureBuilder()
           .returnType("bigint")
           .intermediateType("bigint")
+          .orderSensitive(false)
           .build(),
       exec::AggregateFunctionSignatureBuilder()
           .typeVariable("T")
           .returnType("bigint")
           .intermediateType("bigint")
           .argumentType("T")
+          .orderSensitive(false)
           .build(),
   };
 

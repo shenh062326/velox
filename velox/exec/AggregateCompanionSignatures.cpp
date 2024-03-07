@@ -113,7 +113,8 @@ CompanionSignatures::partialFunctionSignatures(
         /*intermediateType*/ signature->intermediateType(),
         /*argumentTypes*/ signature->argumentTypes(),
         /*constantArguments*/ signature->constantArguments(),
-        /*variableArity*/ signature->variableArity()));
+        /*variableArity*/ signature->variableArity(),
+        /*orderSensitive*/ signature->orderSensitive()));
   }
   return partialSignatures;
 }
@@ -137,7 +138,8 @@ AggregateFunctionSignaturePtr CompanionSignatures::mergeFunctionSignature(
       /*argumentTypes*/
       std::vector<TypeSignature>{signature->intermediateType()},
       /*constantArguments*/ std::vector<bool>{false},
-      /*variableArity*/ false);
+      /*variableArity*/ false,
+      /*variableArity*/ signature->orderSensitive());
 }
 
 std::vector<AggregateFunctionSignaturePtr>
@@ -184,7 +186,8 @@ CompanionSignatures::mergeExtractFunctionSignature(
       /*argumentTypes*/
       std::vector<TypeSignature>{signature->intermediateType()},
       /*constantArguments*/ std::vector<bool>{false},
-      /*variableArity*/ false);
+      /*variableArity*/ false,
+      /*orderSensitive*/ signature->orderSensitive());
 }
 
 std::vector<AggregateFunctionSignaturePtr>
@@ -222,7 +225,8 @@ FunctionSignaturePtr CompanionSignatures::extractFunctionSignature(
       /*argumentTypes*/
       std::vector<TypeSignature>{signature->intermediateType()},
       /*constantArguments*/ std::vector<bool>{false},
-      /*variableArity*/ false);
+      /*variableArity*/ false,
+      /*orderSensitive*/ true);
 }
 
 std::string CompanionSignatures::extractFunctionNameWithSuffix(
